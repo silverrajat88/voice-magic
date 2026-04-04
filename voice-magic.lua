@@ -41,19 +41,27 @@ hs.hotkey.bind({"alt"}, "d",
         hs.sound.getByFile("/System/Library/Sounds/Pop.aiff"):play()
         
         local activeModel = "AI"
+        local sttEngine = "whisper"
         local skipLLM = false
         local file = io.open(VOICE_MAGIC_DIR .. "/voice-magic.conf", "r")
         if file then
             for line in file:lines() do
                 local model = string.match(line, '^ACTIVE_MODEL="(.-)"')
                 if model then activeModel = model end
+                local stt = string.match(line, '^STT_ENGINE="(.-)"')
+                if stt then sttEngine = stt end
                 local skip = string.match(line, '^SKIP_LLM_PROCESSING="(.-)"')
                 if skip == "true" then skipLLM = true end
             end
             file:close()
         end
 
-        local alertText = skipLLM and "⚡ Transcribing..." or ("✨ Processing (" .. activeModel .. ")...")
+        local alertText
+        if skipLLM then
+            alertText = "⚡ Transcribing (" .. sttEngine .. ")..."
+        else
+            alertText = "✨ Processing (" .. sttEngine .. " → " .. activeModel .. ")..."
+        end
         processingAlert = hs.alert.show(alertText, hs.alert.defaultStyle, hs.screen.mainScreen(), 30)
         
         local currentApp = "Unknown"

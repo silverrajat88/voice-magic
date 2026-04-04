@@ -143,17 +143,42 @@ else
     success "Llama model downloaded"
 fi
 
-# ── Step 7: Finalize Scripts ─────────────────────────────────────────────────
-step "Step 7/8: Enabling execution modes"
+# ── Step 7: Parakeet STT (if selected) ───────────────────────────────────────
+step "Step 7/9: Setting up Parakeet STT engine"
+
+STT_ENGINE="${STT_ENGINE:-whisper}"
+if [[ "$STT_ENGINE" == "parakeet" ]]; then
+    if ! command -v python3 &>/dev/null; then
+        error "Python 3 is required for Parakeet but not found. Install it via: brew install python3"
+    fi
+    if command -v parakeet-mlx &>/dev/null; then
+        success "parakeet-mlx already installed — skipping"
+    else
+        info "Installing parakeet-mlx (NVIDIA Parakeet for Apple Silicon)..."
+        pip3 install -U parakeet-mlx
+        if command -v parakeet-mlx &>/dev/null; then
+            success "parakeet-mlx installed"
+        else
+            error "parakeet-mlx installation failed"
+        fi
+    fi
+    info "Note: The Parakeet model (~600MB) will auto-download on first use."
+else
+    success "STT engine is 'whisper' — Parakeet setup skipped"
+fi
+
+# ── Step 8: Finalize Scripts ─────────────────────────────────────────────────
+step "Step 8/9: Enabling execution modes"
 
 chmod +x "$SCRIPT_DIR/dictate.sh"
 chmod +x "$SCRIPT_DIR/process.sh"
 chmod +x "$SCRIPT_DIR/core/stt_engine.sh"
+chmod +x "$SCRIPT_DIR/core/stt_parakeet.sh"
 chmod +x "$SCRIPT_DIR/core/llm_engine.sh"
 success "Scripts marked executable natively"
 
 # ── Step 8: Hammerspoon (Hold-to-Record) ─────────────────────────────────────
-step "Step 8/8: Setting up Hammerspoon (hold-to-record hotkey)"
+step "Step 9/9: Setting up Hammerspoon (hold-to-record hotkey)"
 
 if ! brew list --cask hammerspoon &>/dev/null; then
     info "Installing Hammerspoon..."
