@@ -5,6 +5,7 @@
 # ============================================================================
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/voice-magic.conf"
 
