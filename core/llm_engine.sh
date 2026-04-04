@@ -39,11 +39,14 @@ PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
     -m "$LLAMA_MODEL_PATH" \
     -p "$PROMPT" \
     -n 512 \
-    --temp 0.1 \
+    --temp 0.0 \
     --no-display-prompt \
     -t 4 \
+    -r "User:" \
+    -r "Text:" \
+    -r "###" \
     < /dev/null \
-    2>/dev/null | grep -v '^>' | sed '/^$/d' | head -15 > "$REFINED_TEXT_FILE"
+    2>/dev/null | grep -v '^>' | sed '/^$/d' | grep -v '```python' | grep -v '```bash' | grep -v '```' | head -25 > "$REFINED_TEXT_FILE"
 
 REFINED_TEXT="$(cat "$REFINED_TEXT_FILE")"
 
