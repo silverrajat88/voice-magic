@@ -3,7 +3,6 @@ set -euo pipefail
 
 # ============================================================================
 #  Voice Magic — Uninstaller
-#  Removes everything installed by install.sh
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,40 +11,35 @@ cd "$SCRIPT_DIR"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-info()    { echo -e "  $*"; }
-success() { echo -e "  ${GREEN}✓${NC} $*"; }
-warn()    { echo -e "  ${YELLOW}!${NC} $*"; }
+info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
+success() { echo -e "${GREEN}[✓]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
 
-echo ""
-echo -e "${RED}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${RED}${BOLD}  Voice Magic — Uninstaller${NC}"
-echo -e "${RED}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+echo -e "\n${BOLD}━━━ Voice Magic Uninstaller ━━━${NC}\n"
 
-# ── Show what will be removed ─────────────────────────────────────────────────
-echo -e "This will remove the following from ${BOLD}$SCRIPT_DIR${NC}:"
-echo ""
-[[ -d "$SCRIPT_DIR/whisper.cpp" ]] && info "📁 whisper.cpp/  (source, binaries, and models)"
-[[ -d "$SCRIPT_DIR/llama.cpp" ]]   && info "📁 llama.cpp/    (source, binaries, and models)"
-[[ -f "$SCRIPT_DIR/dictate.sh" ]]  && info "📄 dictate.sh    (terminal runner)"
-[[ -f "$SCRIPT_DIR/process.sh" ]]  && info "📄 process.sh    (Hammerspoon processor)"
-[[ -f "$SCRIPT_DIR/voice-magic.lua" ]] && info "📄 voice-magic.lua (Hammerspoon config)"
-echo ""
+# ── 1. Hammerspoon Cleanup ───────────────────────────────────────────────────
+HAMMERSPOON_DIR="$HOME/.hammerspoon"
+INIT_LUA="$HAMMERSPOON_DIR/init.lua"
+REQUIRE_LINE="dofile(\"$SCRIPT_DIR/voice-magic.lua\")"
 
-read -p "Proceed with uninstall? [y/N] " -n 1 -r
-echo ""
-
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Cancelled."
-    exit 0
+if [[ -f "$INIT_LUA" ]]; then
+    if grep -qF "$REQUIRE_LINE" "$INIT_LUA"; then
+        TEMP_LUA=$(mktemp)
+        # Remove the require line and the comment above it
+        grep -vF "$REQUIRE_LINE" "$INIT_LUA" | grep -vF "-- Voice Magic: hold-to-record dictation" > "$TEMP_LUA"
+        mv "$TEMP_LUA" "$INIT_LUA"
+        success "Removed Voice Magic from Hammerspoon init.lua"
+    else
+        info "Voice Magic not found in Hammerspoon init.lua"
+    fi
 fi
 
-echo ""
+# ── 2. Local Cleanup ─────────────────────────────────────────────────────────
 
-# ── Remove project files ─────────────────────────────────────────────────────
 if [[ -d "$SCRIPT_DIR/whisper.cpp" ]]; then
     rm -rf "$SCRIPT_DIR/whisper.cpp"
     success "Removed whisper.cpp/"
@@ -56,63 +50,37 @@ if [[ -d "$SCRIPT_DIR/llama.cpp" ]]; then
     success "Removed llama.cpp/"
 fi
 
-for file in dictate.sh process.sh voice-magic.lua voice-magic.conf; do
-    if [[ -f "$SCRIPT_DIR/$file" ]]; then
-        rm -f "$SCRIPT_DIR/$file"
-        success "Removed $file"
-    fi
-done
+# We don't remove model configurations, dictate.sh, or process.sh since they are natively checked into git now.
+# But we can remove the downloaded GGUF bins entirely if we want, but removing llama.cpp/ already did that.
 
-# ── Clean up temp files ──────────────────────────────────────────────────────
-rm -f /tmp/voice_magic_recording.wav /tmp/voice_magic_raw.txt /tmp/voice_magic_refined.txt
-success "Cleaned up temp files"
-
-# ── Remove Hammerspoon config ────────────────────────────────────────────────
-HAMMERSPOON_INIT="$HOME/.hammerspoon/init.lua"
-if [[ -f "$HAMMERSPOON_INIT" ]]; then
-    # Remove the dofile line and comment from init.lua
-    if grep -qF "voice-magic.lua" "$HAMMERSPOON_INIT"; then
-        sed -i '' '/Voice Magic/d' "$HAMMERSPOON_INIT"
-        sed -i '' '/voice-magic\.lua/d' "$HAMMERSPOON_INIT"
-        success "Removed Voice Magic from Hammerspoon init.lua"
-    fi
-    # Remove init.lua if it's now empty
-    if [[ ! -s "$HAMMERSPOON_INIT" ]]; then
-        rm -f "$HAMMERSPOON_INIT"
-        success "Removed empty Hammerspoon init.lua"
-    fi
-fi
-
-# ── Optionally remove Homebrew packages ──────────────────────────────────────
+# ── 3. Homebrew Cleanup (Optional) ───────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}The installer may have added these Homebrew packages:${NC}"
-echo "  • sox  (audio recording)"
-echo "  • cmake (build tool)"
-echo "  • wget (file downloader)"
-echo "  • hammerspoon (hotkey automation)"
+echo -e "${YELLOW}Voice Magic installed the following Homebrew dependencies:${NC}"
+echo " - cmake"
+echo " - sox"
+echo " - wget"
+echo " - hammerspoon (cask)"
 echo ""
-read -p "Remove these Homebrew packages too? [y/N] " -n 1 -r
-echo ""
+read -p "Do you want to uninstall these dependencies? [y/N]: " REMOVE_DEPS
 
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    for pkg in sox cmake wget; do
-        if brew list "$pkg" &>/dev/null; then
-            brew uninstall "$pkg"
-            success "Uninstalled $pkg"
+if [[ "$REMOVE_DEPS" =~ ^[Yy]$ ]]; then
+    for dep in cmake sox wget; do
+        if brew list "$dep" &>/dev/null; then
+            info "Uninstalling $dep..."
+            brew uninstall "$dep"
         fi
     done
+    
     if brew list --cask hammerspoon &>/dev/null; then
+        info "Uninstalling Hammerspoon..."
         brew uninstall --cask hammerspoon
-        success "Uninstalled Hammerspoon"
     fi
+    success "Dependencies removed."
 else
-    info "Kept Homebrew packages"
+    info "Keeping dependencies installed."
 fi
 
 echo ""
-echo -e "${GREEN}${BOLD}  ✅ Voice Magic uninstalled.${NC}"
-echo ""
-echo -e "  The ${BOLD}install.sh${NC}, ${BOLD}uninstall.sh${NC}, and ${BOLD}README.md${NC} files remain."
-echo -e "  Delete this folder manually if you want to remove everything:"
-echo -e "  ${YELLOW}rm -rf $SCRIPT_DIR${NC}"
+echo -e "${GREEN}${BOLD}Voice Magic successfully uninstalled!${NC}"
+echo -e "You can now safely delete this folder: ${YELLOW}$SCRIPT_DIR${NC}"
 echo ""
