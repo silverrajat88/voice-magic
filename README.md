@@ -9,13 +9,13 @@ Speak into your mic → get clean, punctuated text. Everything runs locally — 
 ## How It Works
 
 ```
-🎤 Your Voice → [Whisper] → Raw Text → [Llama] → Clean Text → 📋 Clipboard/Paste
+🎤 Your Voice → [STT Engine] → Raw Text → [LLM Engine] → Clean Text → 📋 Clipboard/Paste
 ```
 
 | Component | What it does | Analogy |
 |-----------|-------------|---------|
-| **whisper.cpp** | Converts speech to text (speech-to-text / STT) | The "ears" — listens and transcribes |
-| **llama.cpp** | Cleans up text using AI (large language model) | The "brain" — fixes grammar, removes filler words |
+| **STT Engine** | Converts speech to text (Whisper or Parakeet) | The "ears" — listens and transcribes |
+| **LLM Engine** | Cleans up text using AI (Llama, DeepSeek, or Qwen) | The "brain" — fixes grammar, translates, outputs code |
 | **sox** | Records audio from your microphone | The "microphone cable" |
 | **Hammerspoon** | Global hotkey listener for hold-to-record | The "trigger" — hold ⌥D from any app |
 
@@ -23,23 +23,22 @@ Speak into your mic → get clean, punctuated text. Everything runs locally — 
 
 | Term | Plain English |
 |------|--------------|
-| **Whisper** | An AI model made by OpenAI that converts spoken words into written text. One of the best speech-to-text models available. |
-| **Llama** | An AI model made by Meta (Facebook) that understands and generates text. Like a mini ChatGPT that runs on your laptop. |
-| **whisper.cpp / llama.cpp** | Lightweight C++ ports of the above models. They run directly on your Mac without needing Python or heavy frameworks. |
-| **GGML / GGUF** | File formats for AI models optimized to run on regular computers (not giant servers). Think of it as "MP3 for AI models" — compressed but still high-quality. |
-| **Quantization (Q4_K_M)** | A compression technique that shrinks AI models by ~4x while keeping most of their quality. The `Q4_K_M` in the model name means "4-bit quantization, medium quality". |
-| **Metal** | Apple's GPU framework. Lets the AI models use your Mac's graphics chip for faster processing. |
-| **STT (Speech-to-Text)** | Converting spoken words into written text. Also called ASR (Automatic Speech Recognition). |
-| **LLM (Large Language Model)** | An AI that processes text — like ChatGPT, but the Llama model runs entirely on your Mac. |
-| **Hammerspoon** | A free macOS automation tool. We use it to listen for hotkey press/release events so you can hold a key to record. |
+| **Whisper** | OpenAI's AI model that converts spoken words into text. Highly accurate and natively supports translating to English. |
+| **Parakeet** | NVIDIA's incredibly fast STT model optimized for Apple Silicon via Apple MLX. Extremely speedy but does not natively translate speech in real-time. |
+| **Llama** | Meta's AI model for generating and refining text. Excellent for general grammar correction and creative prose. |
+| **DeepSeek / Qwen** | Highly optimized coding AI models. Perfect for dictating shell commands or programming tasks. Might lack the casual prose nuance of Llama. |
+| **whisper.cpp / llama.cpp** | C++ ports that run right on your Mac using GPU acceleration without heavy python setups. |
+| **GGML / GGUF** | File formats for AI models optimized to run on regular computers ("MP3 for AI"). |
+| **Quantization** | A compression technique that shrinks AI models by ~4x while keeping quality. |
+| **Hammerspoon** | A free macOS automation tool for listening to hotkeys. |
 
 ---
 
 ## System Requirements
 
 - **macOS** 12+ (Monterey or later)
-- **Apple Silicon** recommended (M1/M2/M3/M4) — Intel Macs work but slower
-- **~4 GB** free disk space (for the AI models)
+- **Apple Silicon** recommended (M1/M2/M3/M4) — Needed to fully leverage Parakeet via MLX
+- **~4-5 GB** free disk space (depends on the AI models chosen)
 - **Xcode Command Line Tools** (the installer prompts you if missing)
 - **Homebrew** — install from [brew.sh](https://brew.sh) if you don't have it
 
@@ -47,25 +46,37 @@ Speak into your mic → get clean, punctuated text. Everything runs locally — 
 
 ## Installation
 
-One command. That's it.
-
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
 **What happens behind the scenes:**
-1. Installs build tools (`cmake`, `sox`, `wget`) via Homebrew
-2. Clones and compiles `whisper.cpp` with GPU acceleration
-3. Downloads the Whisper `large-v3-turbo` speech model (~1.6 GB)
-4. Clones and compiles `llama.cpp` with GPU acceleration
-5. Downloads the Llama `3.2-3B-Instruct` text model (~2 GB)
-6. Creates `dictate.sh` (terminal mode) and `process.sh` (Hammerspoon mode)
-7. Installs Hammerspoon and configures hold-to-record hotkey
+1. Installs build tools (`cmake`, `sox`, `wget`)
+2. Compiles `whisper.cpp` & `llama.cpp` with Metal (GPU) support
+3. Downloads your configured models (Whisper, Llama/DeepSeek/Qwen)
+4. Initiates a local Python environment for Parakeet (if selected in config)
+5. Installs Hammerspoon and configures the hotkey listener
 
-Takes **10-20 minutes** (mostly downloading models).
+Takes **10-20 minutes** (mostly downloading models depending on internet). _Tip: The installer is idempotent and skips completed tasks!_
 
-> **💡 Tip:** The script is idempotent — you can run it again safely. It skips completed steps.
+---
+
+## Configuration (`voice-magic.conf`)
+
+Before or after installing, open `voice-magic.conf` to perfectly tailor Voice Magic to your workflow:
+
+### 1. The Ears (Speech-to-Text)
+- `STT_ENGINE="whisper"`: High accuracy, native translation ability.
+- `STT_ENGINE="parakeet"`: **Ultra-fast** transcription (NVIDIA/Apple MLX). _Caveat: Parakeet supports 17 languages but cannot natively translate them across to English on the fly like Whisper. It will transcribe in the spoken language, leaving translation to the LLM step._
+
+### 2. The Brain (Refinement Models)
+- `ACTIVE_MODEL="llama3"`: General-purpose language refinement ([Llama 3.2 3B Instruct](https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF)).
+- `ACTIVE_MODEL="deepseek"`: Exceptional for coding and terminal commands ([DeepSeek Coder 1.3B](https://huggingface.co/TheBloke/deepseek-coder-1.3b-instruct-GGUF)). _Caveat: Best suited for developers; general prose might be rigid._
+- `ACTIVE_MODEL="qwencoder"`: Blistering fast code completion logic ([Qwen 2.5 Coder 1.5B](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF)). _Caveat: Similar to DeepSeek, heavily code biased._
+
+### 3. Hyper-Speed Modes
+- `SKIP_LLM_PROCESSING="true"`: Turn off the LLM ("The Brain") altogether. Voice Magic will drop raw transcribed text into your clipboard in under a second!
 
 ---
 
@@ -73,45 +84,27 @@ Takes **10-20 minutes** (mostly downloading models).
 
 ### 🎯 Hold-to-Record (Recommended)
 
-The SuperWhisper-like experience — works from **any app**:
+Works dynamically across **any app** and feels just like an integrated OS feature!
 
-1. **Open Hammerspoon** from Applications (after install)
-2. **Grant permissions** when prompted:
-   - **System Settings → Privacy & Security → Accessibility** → enable Hammerspoon
-   - **System Settings → Privacy & Security → Microphone** → enable Hammerspoon
-3. **Hold ⌥D** (Option+D) to start recording
-4. **Release ⌥D** when done speaking
-5. Text is automatically **pasted at your cursor position**
+1. **Open Hammerspoon** from Applications.
+2. Grant permissions: **Privacy & Security → Accessibility & Microphone**.
+3. **Hold ⌥D** (Option+D) to start recording. You'll hear a system "tink".
+4. **Release ⌥D** when done.
+5. Watch the magically corrected text paste seamlessly into your active application.
 
-You'll see on-screen alerts:
-- 🎙️ **"Recording..."** while holding the key
-- ✨ **"Processing..."** during transcription
-- A macOS notification with the pasted text when done
+### 🌍 Multilingual vs Translation
 
-> **Note:** A 🎙️ icon appears in your menu bar when Voice Magic is active.
-
-### 🌍 Multilingual & Hindi Support
-Because Voice Magic downloads the `large-v3-turbo` model natively, it has world-class multilingual support built-in.
-
-By default, the language setting is **`auto`**. This means you can freely mix and match languages, including Hindi and English, and it will auto-detect and transcribe appropriately. 
-
-To optimize for a single language, or to guarantee it reads everything as Hindi:
-1. Open the `voice-magic.conf` file in a text editor
-2. Change `LANGUAGE="auto"` to `LANGUAGE="hi"` (or `en` for English)
-3. Save the file. The changes apply to your very next dictation.
+Voice Magic natively supports languages like Hindi!
+- To type exactly in the spoken language (e.g. Hindi, Spanish), set `LANGUAGE="hi"` or leave `LANGUAGE="auto"`.
+- If using **Whisper**, you can enable `TRANSLATE_TO_ENGLISH="true"` in the config to cleanly transcribe your spoken Hindi seamlessly into polished English inline!
 
 ### 💻 Terminal Mode
-
-For CLI usage (records until 1.5s of silence, copies to clipboard):
 
 ```bash
 ./dictate.sh
 ```
 
-1. Hear a **"tink"** sound — start speaking
-2. Stop speaking — recording stops after 1.5s of silence
-3. Hear a **"pop"** — transcription happening
-4. Clean text appears in your **clipboard** (⌘V to paste)
+Stops recording at 1.5 seconds of silence, dropping text right onto your clipboard.
 
 ---
 
@@ -119,80 +112,31 @@ For CLI usage (records until 1.5s of silence, copies to clipboard):
 
 ```
 voice-magic/
-├── install.sh          ← Run this to set everything up
-├── uninstall.sh        ← Run this to remove everything
-├── voice-magic.conf    ← Open this to change the language (supports Hindi/Auto)
-├── dictate.sh          ← Terminal mode runner (generated by install)
-├── process.sh          ← Hammerspoon audio processor (generated by install)
-├── voice-magic.lua     ← Hammerspoon hotkey config (generated by install)
-├── README.md           ← You are here
-├── whisper.cpp/        ← Speech-to-text engine (cloned + compiled)
-│   ├── build/bin/whisper-cli
-│   └── models/ggml-large-v3-turbo.bin    (~1.6 GB)
-└── llama.cpp/          ← Text refinement engine (cloned + compiled)
-    ├── build/bin/llama-completion
-    └── models/Llama-3.2-3B-Instruct-Q4_K_M.gguf  (~2 GB)
+├── install.sh          ← Setup application
+├── uninstall.sh        ← Remove application and dependencies
+├── voice-magic.conf    ← Configuration hub (Models, Languages, Translations)
+├── dictate.sh          ← Terminal mode CLI script
+├── process.sh          ← Hammerspoon processing handler
+├── core/               ← Engine routing logic (STT & LLM loaders)
+├── models/             ← Prompt/URL configurations for Llama/DeepSeek/Qwen
+└── ... (compiled dependencies like whisper.cpp and llama.cpp)
 ```
-
----
-
-## Uninstall
-
-```bash
-chmod +x uninstall.sh
-./uninstall.sh
-```
-
-Removes:
-- `whisper.cpp/`, `llama.cpp/` — source, binaries, and models
-- `dictate.sh`, `process.sh`, `voice-magic.lua` — generated scripts
-- Hammerspoon config entry from `~/.hammerspoon/init.lua`
-- Temp files in `/tmp/`
-- Optionally: Homebrew packages (`sox`, `cmake`, `wget`, `hammerspoon`)
-
-Does **not** remove Homebrew itself, Xcode CLI tools, or this README.
 
 ---
 
 ## Troubleshooting
 
-### Hold-to-record doesn't work
-- Open **Hammerspoon** from Applications
-- Check that Hammerspoon has **Accessibility** permission (System Settings → Privacy & Security → Accessibility)
-- Check that Hammerspoon has **Microphone** permission
-- Click the 🎙️ menu bar icon → **Reload** to refresh the config
-
-### "No speech detected"
-- Check your mic is working (System Settings → Sound → Input)
-- Make sure the app (Terminal/Hammerspoon) has microphone permission
-
-### "permission denied: ./install.sh"
-```bash
-chmod +x install.sh
-```
-
-### Build fails with Xcode errors
-```bash
-xcode-select --install
-```
-
-### Models fail to download
-- Check your internet connection
-- Re-run `./install.sh` — it skips already-completed steps
-
-### Dictation is slow
-- **Apple Silicon:** 2-5 seconds typical
-- **Intel Macs:** 10-30 seconds. Consider a smaller Whisper model
-
-### Clipboard is empty after dictation (terminal mode)
-- Check `/tmp/voice_magic_raw.txt` — if empty, mic isn't capturing
-- If raw text exists but clipboard is empty, check terminal output for Llama errors
+- **"No speech detected"**: Ensure Terminal or Hammerspoon has Microphone permission in Privacy & Security settings.
+- **Dictation slowness**: Apple Silicon Macs will process text gracefully under 2-3 seconds. Non-Apple Silicon Intel Macs will see delays ranging from 10-20 seconds. If necessary, toggle `SKIP_LLM_PROCESSING="true"` in the config.
+- **Missing Models**: Restart `./install.sh`. Interrupted downloads will pick up where they broke off.
+- **Empty Clipboard in Terminal**: Check `/tmp/voice_magic_raw.txt`. If empty, the mic isn't bridging properly inside `sox`.
 
 ---
 
 ## Credits
 
-- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) by Georgi Gerganov
-- [llama.cpp](https://github.com/ggerganov/llama.cpp) by Georgi Gerganov
-- [Hammerspoon](https://www.hammerspoon.org/) — macOS automation
-- Based on a [Gemini conversation](https://gemini.google.com/share/fd027556ccfc)
+- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) & [llama.cpp](https://github.com/ggerganov/llama.cpp) by Georgi Gerganov.
+- [Hammerspoon](https://www.hammerspoon.org/) — Global macOS automation.
+- [Parakeet-MLX](https://github.com/ml-explore/mlx-examples/tree/main/parakeet) — NVIDIA's Parakeet port for Apple Silicon MLX by Apple.
+- [Qwen](https://github.com/QwenLM/Qwen2.5-Coder) — Qwen Coder variants.
+- [DeepSeek](https://github.com/deepseek-ai/DeepSeek-Coder) — DeepSeek Coder AI.
