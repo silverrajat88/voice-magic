@@ -163,6 +163,10 @@ cat > "$CONF_FILE" << 'CONF_EOF'
 # If you dictate predominantly in one language, set it to the language code 
 # to improve accuracy and speed: e.g. 'en', 'hi', 'es'
 LANGUAGE="auto"
+
+# Set to 'true' to seamlessly translate all spoken languages (e.g., Hindi)
+# into beautifully polished English text before pasting.
+TRANSLATE_TO_ENGLISH="false"
 CONF_EOF
     success "voice-magic.conf created"
 else
@@ -205,10 +209,16 @@ sox -d -r 16000 -c 1 -b 16 "$AUDIO_FILE" silence 1 0.1 1% 1 1.5 1%
 afplay /System/Library/Sounds/Pop.aiff &
 echo "🔄 Transcribing with Whisper..."
 
+TRANSLATE_FLAG=""
+if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
+    TRANSLATE_FLAG="-tr"
+fi
+
 "$WHISPER_CLI" \
     -m "$WHISPER_MODEL" \
     -f "$AUDIO_FILE" \
     -l "$LANGUAGE" \
+    $TRANSLATE_FLAG \
     --no-timestamps \
     -t 4 \
     2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
@@ -223,11 +233,19 @@ fi
 echo "📝 Raw transcription ($LANGUAGE): $RAW_TEXT"
 echo "✨ Refining with Llama..."
 
-PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
+if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
+    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
 Corrected:"
+else
+    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
+
+Text: $RAW_TEXT
+
+Corrected:"
+fi
 
 "$LLAMA_CLI" \
     -m "$LLAMA_MODEL" \
@@ -283,10 +301,16 @@ for bin in "$WHISPER_CLI" "$LLAMA_CLI"; do
     if [[ ! -f "$bin" ]]; then exit 1; fi
 done
 
+TRANSLATE_FLAG=""
+if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
+    TRANSLATE_FLAG="-tr"
+fi
+
 "$WHISPER_CLI" \
     -m "$WHISPER_MODEL" \
     -f "$AUDIO_FILE" \
     -l "$LANGUAGE" \
+    $TRANSLATE_FLAG \
     --no-timestamps \
     -t 4 \
     2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
@@ -298,11 +322,19 @@ if [[ -z "$RAW_TEXT" ]]; then
     exit 0
 fi
 
-PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
+if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
+    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
 Corrected:"
+else
+    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
+
+Text: $RAW_TEXT
+
+Corrected:"
+fi
 
 "$LLAMA_CLI" \
     -m "$LLAMA_MODEL" \
