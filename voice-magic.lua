@@ -15,6 +15,19 @@ local AUDIO_FILE = "/tmp/voice_magic_recording.wav"
 local PROCESS_SCRIPT = VOICE_MAGIC_DIR .. "/process.sh"
 local SOX_PATH = "/opt/homebrew/bin/sox"
 
+local elegantStyle = {
+    strokeColor = {white = 1, alpha = 0.1},
+    fillColor = {white = 0.05, alpha = 0.85},
+    textColor = {white = 1, alpha = 1},
+    strokeWidth = 1,
+    radius = 16,
+    textSize = 24,
+    fadeInDuration = 0.15,
+    fadeOutDuration = 0.25,
+    textFont = ".AppleSystemUIFont",
+    padding = 24
+}
+
 local recording = false
 local soxTask = nil
 local processingAlert = nil
@@ -24,7 +37,7 @@ hs.hotkey.bind({"alt"}, "d",
         if recording then return end
         recording = true
         hs.sound.getByFile("/System/Library/Sounds/Tink.aiff"):play()
-        processingAlert = hs.alert.show("🎙️ Recording...", hs.alert.defaultStyle, hs.screen.mainScreen(), "forever")
+        processingAlert = hs.alert.show("🎙️ Recording...", elegantStyle, hs.screen.mainScreen(), "forever")
         soxTask = hs.task.new(SOX_PATH, nil, {
             "-d", "-r", "16000", "-c", "1", "-b", "16", AUDIO_FILE
         })
@@ -62,11 +75,11 @@ hs.hotkey.bind({"alt"}, "d",
         else
             alertText = "✨ Processing (" .. sttEngine .. " → " .. activeModel .. ")..."
         end
-        processingAlert = hs.alert.show(alertText, hs.alert.defaultStyle, hs.screen.mainScreen(), 30)
+        processingAlert = hs.alert.show(alertText, elegantStyle, hs.screen.mainScreen(), 30)
         
         hs.task.new("/bin/bash", function(exitCode)
             if processingAlert then hs.alert.closeSpecific(processingAlert) end
-            if exitCode ~= 0 then hs.alert.show("⚠️ Voice Magic failed", 3) end
+            if exitCode ~= 0 then hs.alert.show("⚠️ Voice Magic failed", elegantStyle, hs.screen.mainScreen(), 3) end
         end, {PROCESS_SCRIPT, AUDIO_FILE}):start()
     end
 )
@@ -84,4 +97,4 @@ if menubar then
     })
 end
 
-hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", 3)
+hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", elegantStyle, hs.screen.mainScreen(), 3)
