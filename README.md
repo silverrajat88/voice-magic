@@ -24,7 +24,7 @@ Speak into your mic → get clean, punctuated text. Everything runs locally — 
 | Term | Plain English |
 |------|--------------|
 | **Whisper** | OpenAI's AI model that converts spoken words into text. Highly accurate and natively supports translating to English. |
-| **Parakeet** | NVIDIA's incredibly fast STT model optimized for Apple Silicon via Apple MLX. Extremely speedy but does not natively translate speech in real-time. |
+| **Parakeet** | NVIDIA's incredibly fast STT model (`parakeet-tdt-0.6b-v3`), heavily optimized for Apple Silicon via Apple MLX. Extremely speedy (~600MB footprint) but does not natively translate speech in real-time. |
 | **Llama** | Meta's AI model for generating and refining text. Excellent for general grammar correction and creative prose. |
 | **DeepSeek / Qwen** | Highly optimized coding AI models. Perfect for dictating shell commands or programming tasks. Might lack the casual prose nuance of Llama. |
 | **whisper.cpp / llama.cpp** | C++ ports that run right on your Mac using GPU acceleration without heavy python setups. |
@@ -119,7 +119,9 @@ voice-magic/
 ├── process.sh          ← Hammerspoon processing handler
 ├── core/               ← Engine routing logic (STT & LLM loaders)
 ├── models/             ← Prompt/URL configurations for Llama/DeepSeek/Qwen
-└── ... (compiled dependencies like whisper.cpp and llama.cpp)
+├── venv/               ← Python environment containing parakeet-mlx
+├── whisper.cpp/        ← C++ Speech-to-text binaries and models
+└── llama.cpp/          ← C++ LLM binaries and models
 ```
 
 ---
