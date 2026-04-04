@@ -134,6 +134,9 @@ If you are utilizing the Persistent Memory Servers (via Hammerspoon) and want to
 # Show active memory servers bound to their respective ports
 lsof -iTCP -sTCP:LISTEN -P | grep -E '8080|8081|8082'
 
+# See how much Unified Memory (in MB) each server is aggressively consuming
+ps -eo rss,command | awk '/whisper-server|llama-server|server_parakeet/ && !/awk/ {printf "%.2f MB  %s\n", $1/1024, $2}'
+
 # Or view their live event logs
 tail -n 15 /tmp/*_server.log
 ```
