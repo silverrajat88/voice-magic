@@ -8,19 +8,9 @@ export LANG=en_US.UTF-8
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/voice-magic.conf"
 
-CURRENT_APP="${1:-normal}"
-AUDIO_FILE="${2:-/tmp/voice_magic_recording.wav}"
+AUDIO_FILE="${1:-/tmp/voice_magic_recording.wav}"
 RAW_TEXT_FILE="/tmp/voice_magic_raw.txt"
 REFINED_TEXT_FILE="/tmp/voice_magic_refined.txt"
-
-# Resolve mode based on application
-MODE="normal"
-for app in "${DEV_APPS[@]}"; do
-    if [[ "$CURRENT_APP" == "$app" ]]; then
-        MODE="dev"
-        break
-    fi
-done
 
 if [[ ! -f "$AUDIO_FILE" ]]; then exit 1; fi
 
@@ -34,7 +24,7 @@ fi
 if [[ "${SKIP_LLM_PROCESSING:-false}" == "true" ]]; then
     cp "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"
 else
-    "$SCRIPT_DIR/core/llm_engine.sh" "$MODE" "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"
+    "$SCRIPT_DIR/core/llm_engine.sh" "normal" "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"
 fi
 
 REFINED_TEXT="$(cat "$REFINED_TEXT_FILE")"

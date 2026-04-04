@@ -64,16 +64,10 @@ hs.hotkey.bind({"alt"}, "d",
         end
         processingAlert = hs.alert.show(alertText, hs.alert.defaultStyle, hs.screen.mainScreen(), 30)
         
-        local currentApp = "Unknown"
-        local frontmost = hs.application.frontmostApplication()
-        if frontmost then
-            currentApp = frontmost:name()
-        end
-
         hs.task.new("/bin/bash", function(exitCode)
             if processingAlert then hs.alert.closeSpecific(processingAlert) end
             if exitCode ~= 0 then hs.alert.show("⚠️ Voice Magic failed", 3) end
-        end, {PROCESS_SCRIPT, currentApp, AUDIO_FILE}):start()
+        end, {PROCESS_SCRIPT, AUDIO_FILE}):start()
     end
 )
 
