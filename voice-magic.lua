@@ -112,6 +112,18 @@ if menubar then
 end
 
 -- Hook servers to spin up automatically when Voice Magic invokes!
-hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
+local autoStartServers = true
+local conf_file = io.open(VOICE_MAGIC_DIR .. "/voice-magic.conf", "r")
+if conf_file then
+    for line in conf_file:lines() do
+        local autoStart = string.match(line, '^%s*AUTO_START_SERVERS%s*=%s*"(.-)"')
+        if autoStart == "false" then autoStartServers = false end
+    end
+    conf_file:close()
+end
+
+if autoStartServers then
+    hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
+end
 
 hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", elegantStyle, hs.screen.mainScreen(), 3)
