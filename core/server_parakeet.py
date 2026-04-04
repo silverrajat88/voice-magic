@@ -35,7 +35,8 @@ class ParakeetHandler(BaseHTTPRequestHandler):
         pass # Suppress standard HTTP stdout logging for speed
 
 if __name__ == '__main__':
-    server_address = ('127.0.0.1', 8082)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8082
+    server_address = ('127.0.0.1', port)
     httpd = HTTPServer(server_address, ParakeetHandler)
-    print("Parakeet server running on port 8082...")
+    print(f"Parakeet server running on port {port}...")
     httpd.serve_forever()

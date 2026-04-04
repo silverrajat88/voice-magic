@@ -17,7 +17,7 @@ if [[ ! -f "$AUDIO_FILE" ]]; then
     exit 1
 fi
 
-if curl -sSf -X POST -H "Content-Length: ${#AUDIO_FILE}" -d "$AUDIO_FILE" http://127.0.0.1:8082 > "$RAW_TEXT_FILE" 2>/dev/null; then
+if curl -sSf -X POST -H "Content-Length: ${#AUDIO_FILE}" -d "$AUDIO_FILE" "http://127.0.0.1:${PARAKEET_PORT:-8082}" > "$RAW_TEXT_FILE" 2>/dev/null; then
     sed -i '' '/^$/d' "$RAW_TEXT_FILE"
     exit 0
 fi

@@ -36,10 +36,10 @@ fi
 PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
 
 # Fast Server Mode Check
-if curl -sSf 127.0.0.1:8080/health >/dev/null 2>&1; then
+if curl -sSf "127.0.0.1:${LLM_PORT:-8080}/health" >/dev/null 2>&1; then
     JSON_PAYLOAD=$(python3 -c 'import json, sys; print(json.dumps({"prompt": sys.argv[1], "n_predict": 512, "temperature": 0.0, "stop": ["<jupyter_text>", "[end of text]", "<|im_end|>"]}))' "$PROMPT")
     
-    RESPONSE=$(curl -sSf -X POST http://127.0.0.1:8080/completion \
+    RESPONSE=$(curl -sSf -X POST "http://127.0.0.1:${LLM_PORT:-8080}/completion" \
         -H "Content-Type: application/json" \
         -d "$JSON_PAYLOAD" 2>/dev/null)
     
