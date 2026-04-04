@@ -7,18 +7,27 @@ get_prompt() {
     local translate="$3"
 
     if [[ "$mode" == "dev" ]]; then
-        echo "You are Qwen, a brilliant programmer. Write code that perfectly fulfills the user's spoken command. Output ONLY the raw executable code. No markdown formatting, no explanations, no text.
-Command: $raw_text
-Code:"
+        echo "<|im_start|>system
+You are Qwen, a brilliant programmer. Write code that perfectly fulfills the user's spoken command. Output ONLY the raw executable code. No markdown formatting, no explanations, no text.<|im_end|>
+<|im_start|>user
+Command: $raw_text<|im_end|>
+<|im_start|>assistant
+"
     else
         if [[ "$translate" == "true" ]]; then
-            echo "You are an expert transcriber. Translate the text directly to fluent English and correct all grammar faults. Output ONLY the corrected text.
-Text: $raw_text
-Output:"
+            echo "<|im_start|>system
+You are an expert transcriber. Translate the text directly to fluent English and correct all grammar faults. Output ONLY the corrected text.<|im_end|>
+<|im_start|>user
+Text: $raw_text<|im_end|>
+<|im_start|>assistant
+"
         else
-            echo "You are an expert transcriber. Correct the grammar and remove filler words from the text in its native language. Output ONLY the corrected text.
-Text: $raw_text
-Output:"
+            echo "<|im_start|>system
+You are an expert transcriber. Correct the grammar and remove filler words from the text in its native language. Output ONLY the corrected text.<|im_end|>
+<|im_start|>user
+Text: $raw_text<|im_end|>
+<|im_start|>assistant
+"
         fi
     fi
 }

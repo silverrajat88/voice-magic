@@ -47,9 +47,10 @@ PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
     -r "###" \
     -r "<jupyter_text>" \
     -r " [end of text]" \
+    -r "<|im_end|>" \
     < /dev/null \
     2>/dev/null | grep -v '^>' | sed '/^$/d' | grep -v '```' | \
-    sed -e 's/ \[end of text\]//g' -e 's/\[end of text\]//g' -e 's/<jupyter_text>//g' | \
+    sed -e 's/ \[end of text\]//g' -e 's/\[end of text\]//g' -e 's/<jupyter_text>//g' -e 's/<|im_end|>//g' | \
     sed -e '/^Text:$/d' -e '/^User:$/d' -e '/^Code Output:$/d' -e '/^Corrected:$/d' -e '/^Code:$/d' -e '/^Output:$/d' -e '/^Corrected English:$/d' \
     | head -25 > "$REFINED_TEXT_FILE"
 
