@@ -27,8 +27,16 @@ else
     WHISPER_MODEL="$SCRIPT_DIR/whisper.cpp/models/ggml-large-v3-turbo.bin"
 
     TRANSLATE_FLAG=""
+    local whisper_task="transcribe"
     if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
         TRANSLATE_FLAG="-tr"
+        whisper_task="translate"
+    fi
+
+    # Fast Server Mode Check
+    if curl -sSf 127.0.0.1:8081/inference -F "file=@$AUDIO_FILE" -F "response_format=text" -F "task=$whisper_task" > "$RAW_TEXT_FILE" 2>/dev/null; then
+        sed -i '' '/^$/d' "$RAW_TEXT_FILE"
+        exit 0
     fi
 
     "$WHISPER_CLI" \

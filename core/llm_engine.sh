@@ -35,6 +35,26 @@ fi
 # Fetch the prompt from the active model configurations
 PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
 
+# Fast Server Mode Check
+if curl -sSf 127.0.0.1:8080/health >/dev/null 2>&1; then
+    JSON_PAYLOAD=$(python3 -c 'import json, sys; print(json.dumps({"prompt": sys.argv[1], "n_predict": 512, "temperature": 0.0, "stop": ["<jupyter_text>", "[end of text]", "<|im_end|>"]}))' "$PROMPT")
+    
+    RESPONSE=$(curl -sSf -X POST http://127.0.0.1:8080/completion \
+        -H "Content-Type: application/json" \
+        -d "$JSON_PAYLOAD" 2>/dev/null)
+    
+    if [[ -n "$RESPONSE" ]]; then
+        REFINED_TEXT=$(python3 -c "import sys, json; data=json.loads(sys.argv[1]); print(data.get('content', '') or data.get('text', ''))" "$RESPONSE" 2>/dev/null)
+        if [[ -n "$REFINED_TEXT" ]]; then
+            echo "$REFINED_TEXT" | sed -e 's/ \[end of text\]//g' -e 's/\[end of text\]//g' -e 's/<jupyter_text>//g' -e 's/<|im_end|>//g' | \
+            sed -e '/^Text:$/d' -e '/^User:$/d' -e '/^Code Output:$/d' -e '/^Corrected:$/d' -e '/^Code:$/d' -e '/^Output:$/d' -e '/^Corrected English:$/d' \
+            | head -25 > "$REFINED_TEXT_FILE"
+            exit 0
+        fi
+    fi
+fi
+
+
 "$LLAMA_CLI" \
     -m "$LLAMA_MODEL_PATH" \
     -p "$PROMPT" \

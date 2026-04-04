@@ -97,9 +97,21 @@ if menubar then
         { title = "-" },
         { title = "Hold ⌥D to dictate", disabled = true },
         { title = "-" },
+        { title = "🟢 Start Memory Servers (Fast)", fn = function() 
+            hs.alert.show("🟢 Booting Servers...", elegantStyle, hs.screen.mainScreen(), 3)
+            hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
+        end },
+        { title = "🔴 Kill Memory Servers (Save RAM)", fn = function() 
+            hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/stop_servers.sh"}):start()
+            hs.alert.show("🔴 Servers Terminated", elegantStyle, hs.screen.mainScreen(), 2)
+        end },
+        { title = "-" },
         { title = "Open Folder", fn = function() hs.execute("open " .. VOICE_MAGIC_DIR) end },
         { title = "Reload", fn = function() hs.reload() end },
     })
 end
+
+-- Hook servers to spin up automatically when Voice Magic invokes!
+hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
 
 hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", elegantStyle, hs.screen.mainScreen(), 3)

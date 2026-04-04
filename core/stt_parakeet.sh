@@ -17,8 +17,11 @@ if [[ ! -f "$AUDIO_FILE" ]]; then
     exit 1
 fi
 
-# parakeet-mlx outputs transcribed text to stdout
-# It auto-downloads the model on first run (~600MB)
+if curl -sSf -X POST -H "Content-Length: ${#AUDIO_FILE}" -d "$AUDIO_FILE" http://127.0.0.1:8082 > "$RAW_TEXT_FILE" 2>/dev/null; then
+    sed -i '' '/^$/d' "$RAW_TEXT_FILE"
+    exit 0
+fi
+
 PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"
 
 if [[ ! -x "$PYTHON_BIN" ]]; then
