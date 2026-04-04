@@ -46,7 +46,9 @@ PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
     -r "Text:" \
     -r "###" \
     < /dev/null \
-    2>/dev/null | grep -v '^>' | sed '/^$/d' | grep -v '```python' | grep -v '```bash' | grep -v '```' | head -25 > "$REFINED_TEXT_FILE"
+    2>/dev/null | grep -v '^>' | sed '/^$/d' | grep -v '```' | \
+    sed -e '/^Text:$/d' -e '/^User:$/d' -e '/^Code Output:$/d' -e '/^Corrected:$/d' -e '/^Code:$/d' -e '/^Output:$/d' -e '/^Corrected English:$/d' \
+    | head -25 > "$REFINED_TEXT_FILE"
 
 REFINED_TEXT="$(cat "$REFINED_TEXT_FILE")"
 
