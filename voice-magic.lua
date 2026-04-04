@@ -3,12 +3,10 @@
 --  Hold ⌥D (Option+D) to record, release to transcribe + paste
 -- ============================================================================
 
-local VOICE_MAGIC_DIR = os.getenv("HOME") .. "/Documents/projects/voice-magic"
--- Actually a better way is to dynamically get the path of this script, but for now we fallback correctly
 local file_info = debug.getinfo(1, "S")
-local source_path = file_info.source:match("^@?(.*)/")
-if source_path then
-    VOICE_MAGIC_DIR = source_path
+local VOICE_MAGIC_DIR = file_info.source:match("^@?(.*)/")
+if not VOICE_MAGIC_DIR then
+    error("Could not determine Voice Magic directory")
 end
 
 local AUDIO_FILE = "/tmp/voice_magic_recording.wav"
@@ -48,8 +46,15 @@ hs.hotkey.bind({"alt"}, "d",
         recording = false
         if processingAlert then hs.alert.closeSpecific(processingAlert) end
         if soxTask and soxTask:isRunning() then
-            soxTask:terminate()
-            hs.timer.usleep(300000)
+            local maxWait = 10
+            while soxTask:isRunning() and maxWait > 0 do
+                hs.timer.usleep(100000)
+                maxWait = maxWait - 1
+            end
+            if soxTask:isRunning() then
+                soxTask:terminate()
+                hs.timer.usleep(500000)
+            end
         end
         hs.sound.getByFile("/System/Library/Sounds/Pop.aiff"):play()
         
@@ -59,11 +64,11 @@ hs.hotkey.bind({"alt"}, "d",
         local file = io.open(VOICE_MAGIC_DIR .. "/voice-magic.conf", "r")
         if file then
             for line in file:lines() do
-                local model = string.match(line, '^ACTIVE_MODEL="(.-)"')
+                local model = string.match(line, '^%s*ACTIVE_MODEL%s*=%s*"(.-)"')
                 if model then activeModel = model end
-                local stt = string.match(line, '^STT_ENGINE="(.-)"')
+                local stt = string.match(line, '^%s*STT_ENGINE%s*=%s*"(.-)"')
                 if stt then sttEngine = stt end
-                local skip = string.match(line, '^SKIP_LLM_PROCESSING="(.-)"')
+                local skip = string.match(line, '^%s*SKIP_LLM_PROCESSING%s*=%s*"(.-)"')
                 if skip == "true" then skipLLM = true end
             end
             file:close()

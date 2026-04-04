@@ -31,13 +31,19 @@ fi
 REFINED_TEXT="$(cat "$REFINED_TEXT_FILE")"
 
 # Safe paste (Backup clipboard, set clipboard, paste, restore clipboard)
-OLD_CLIPBOARD=$(pbpaste)
+OLD_CLIPBOARD=$(timeout 2 pbpaste) || OLD_CLIPBOARD="[clipboard backup failed]"
 
 echo -n "$REFINED_TEXT" | pbcopy
-osascript -e 'tell application "System Events" to keystroke "v" using command down'
-osascript -e "display notification \"$(echo "$REFINED_TEXT" | head -1)\" with title \"Voice Magic\" subtitle \"Pasted to cursor\""
-
-sleep 0.5
-echo -n "$OLD_CLIPBOARD" | pbcopy
+if ! osascript -e 'tell application "System Events" to keystroke "v" using command down'; then
+    osascript -e 'display notification "Paste failed — text still in clipboard" with title "Voice Magic"'
+else
+    ESCAPED_TEXT=$(echo "$REFINED_TEXT" | head -1 | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed "s/'/\\\\'/g")
+    osascript -e "display notification \"$ESCAPED_TEXT\" with title \"Voice Magic\" subtitle \"Pasted to cursor\""
+    
+    sleep 0.5
+    if [[ "$OLD_CLIPBOARD" != "[clipboard backup failed]" ]]; then
+        echo -n "$OLD_CLIPBOARD" | pbcopy
+    fi
+fi
 
 rm -f "$AUDIO_FILE" "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"

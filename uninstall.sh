@@ -53,6 +53,14 @@ fi
 # We don't remove model configurations, dictate.sh, or process.sh since they are natively checked into git now.
 # But we can remove the downloaded GGUF bins entirely if we want, but removing llama.cpp/ already did that.
 
+if [[ -d "$SCRIPT_DIR/venv" ]]; then
+    rm -rf "$SCRIPT_DIR/venv"
+    success "Removed Python virtual environment (Parakeet)"
+fi
+
+rm -f /tmp/voice_magic_*.txt /tmp/voice_magic_recording.wav 2>/dev/null || true
+success "Cleaned temporary processing files"
+
 # ── 3. Homebrew Cleanup (Optional) ───────────────────────────────────────────
 echo ""
 echo -e "${YELLOW}Voice Magic installed the following Homebrew dependencies:${NC}"
