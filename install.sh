@@ -45,7 +45,7 @@ if ! command -v brew &>/dev/null; then
 fi
 success "Homebrew found"
 
-BREW_DEPS=(cmake sox wget)
+BREW_DEPS=(cmake sox wget ffmpeg)
 for dep in "${BREW_DEPS[@]}"; do
     if ! command -v "$dep" &>/dev/null; then
         info "Installing $dep..."

@@ -18,11 +18,18 @@ fi
 
 # parakeet-mlx outputs transcribed text to stdout
 # It auto-downloads the model on first run (~600MB)
-PARAKEET_BIN="$SCRIPT_DIR/venv/bin/parakeet-mlx"
+PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"
 
-if [[ ! -x "$PARAKEET_BIN" ]]; then
-    echo "Error: parakeet-mlx is not installed in the local venv. Run ./install.sh again."
+if [[ ! -x "$PYTHON_BIN" ]]; then
+    echo "Error: Python environment for parakeet not found. Run ./install.sh again."
     exit 1
 fi
 
-"$PARAKEET_BIN" "$AUDIO_FILE" 2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
+"$PYTHON_BIN" -c "
+import sys, warnings
+warnings.filterwarnings('ignore')
+from parakeet_mlx import from_pretrained
+model = from_pretrained('mlx-community/parakeet-tdt-0.6b-v3')
+res = model.transcribe(sys.argv[1])
+print(res.text)
+" "$AUDIO_FILE" 2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
