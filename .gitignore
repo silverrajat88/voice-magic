@@ -1,3 +1,4 @@
 whisper.cpp/
 llama.cpp/
 .DS_Store
+venv/

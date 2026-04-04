@@ -151,15 +151,22 @@ if [[ "$STT_ENGINE" == "parakeet" ]]; then
     if ! command -v python3 &>/dev/null; then
         error "Python 3 is required for Parakeet but not found. Install it via: brew install python3"
     fi
-    if command -v parakeet-mlx &>/dev/null; then
-        success "parakeet-mlx already installed — skipping"
+    if [[ -x "$SCRIPT_DIR/venv/bin/parakeet-mlx" ]]; then
+        success "parakeet-mlx already installed in venv — skipping"
     else
         info "Installing parakeet-mlx (NVIDIA Parakeet for Apple Silicon)..."
-        pip3 install -U parakeet-mlx
-        if command -v parakeet-mlx &>/dev/null; then
-            success "parakeet-mlx installed"
+        
+        VENV_DIR="$SCRIPT_DIR/venv"
+        if [[ ! -d "$VENV_DIR" ]]; then
+            python3 -m venv "$VENV_DIR"
+        fi
+        
+        "$VENV_DIR/bin/pip" install -U parakeet-mlx
+        
+        if [[ -x "$VENV_DIR/bin/parakeet-mlx" ]]; then
+            success "parakeet-mlx installed securely in local venv"
         else
-            error "parakeet-mlx installation failed"
+            error "parakeet-mlx installation failed inside venv"
         fi
     fi
     info "Note: The Parakeet model (~600MB) will auto-download on first use."
