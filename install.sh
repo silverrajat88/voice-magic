@@ -16,7 +16,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
 success() { echo -e "${GREEN}[✓]${NC} $*"; }
@@ -33,9 +33,8 @@ else
 fi
 
 # ── Step 1: Prerequisites ────────────────────────────────────────────────────
-step "Step 1/7: Checking prerequisites"
+step "Step 1/8: Checking prerequisites"
 
-# Xcode Command Line Tools
 if ! xcode-select -p &>/dev/null; then
     info "Installing Xcode Command Line Tools..."
     xcode-select --install
@@ -45,13 +44,11 @@ else
     success "Xcode Command Line Tools found"
 fi
 
-# Homebrew
 if ! command -v brew &>/dev/null; then
     error "Homebrew is not installed. Install it from https://brew.sh and re-run this script."
 fi
 success "Homebrew found"
 
-# Install missing brew dependencies
 BREW_DEPS=(cmake sox wget)
 for dep in "${BREW_DEPS[@]}"; do
     if ! command -v "$dep" &>/dev/null; then
@@ -63,8 +60,8 @@ for dep in "${BREW_DEPS[@]}"; do
     fi
 done
 
-# ── Step 2: whisper.cpp (The "Ears" — Speech to Text) ────────────────────────
-step "Step 2/7: Setting up whisper.cpp (speech-to-text engine)"
+# ── Step 2: whisper.cpp ──────────────────────────────────────────────────────
+step "Step 2/8: Setting up whisper.cpp (speech-to-text engine)"
 
 WHISPER_DIR="$SCRIPT_DIR/whisper.cpp"
 
@@ -87,12 +84,12 @@ else
     if [[ -f "$WHISPER_DIR/build/bin/whisper-cli" ]]; then
         success "whisper.cpp built successfully"
     else
-        error "whisper.cpp build failed — whisper-cli binary not found"
+        error "whisper.cpp build failed"
     fi
 fi
 
-# ── Step 3: Download Whisper model ────────────────────────────────────────────
-step "Step 3/7: Downloading Whisper model (large-v3-turbo, ~1.6 GB)"
+# ── Step 3: Whisper model ────────────────────────────────────────────────────
+step "Step 3/8: Downloading Whisper model (large-v3-turbo, ~1.6 GB)"
 
 WHISPER_MODEL_DIR="$WHISPER_DIR/models"
 WHISPER_MODEL="$WHISPER_MODEL_DIR/ggml-large-v3-turbo.bin"
@@ -107,8 +104,8 @@ else
     success "Whisper model downloaded"
 fi
 
-# ── Step 4: llama.cpp (The "Brain" — Text Refinement) ────────────────────────
-step "Step 4/7: Setting up llama.cpp (text refinement engine)"
+# ── Step 4: llama.cpp ────────────────────────────────────────────────────────
+step "Step 4/8: Setting up llama.cpp (text refinement engine)"
 
 LLAMA_DIR="$SCRIPT_DIR/llama.cpp"
 
@@ -131,12 +128,12 @@ else
     if [[ -f "$LLAMA_DIR/build/bin/llama-cli" ]]; then
         success "llama.cpp built successfully"
     else
-        error "llama.cpp build failed — llama-cli binary not found"
+        error "llama.cpp build failed"
     fi
 fi
 
-# ── Step 5: Download Llama model ─────────────────────────────────────────────
-step "Step 5/7: Downloading Llama model (3.2-3B-Instruct, ~2 GB)"
+# ── Step 5: Llama model ──────────────────────────────────────────────────────
+step "Step 5/8: Downloading Llama model (3.2-3B-Instruct, ~2 GB)"
 
 LLAMA_MODEL_DIR="$LLAMA_DIR/models"
 LLAMA_MODEL="$LLAMA_MODEL_DIR/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
@@ -151,10 +148,30 @@ else
     success "Llama model downloaded"
 fi
 
-# ── Step 6: Create scripts ───────────────────────────────────────────────────
-step "Step 6/7: Creating runner scripts"
+# ── Step 6: Config Generator ─────────────────────────────────────────────────
+step "Step 6/8: Setting up voice-magic.conf"
 
-# --- dictate.sh (Terminal mode: silence-triggered) ---
+CONF_FILE="$SCRIPT_DIR/voice-magic.conf"
+if [[ ! -f "$CONF_FILE" ]]; then
+cat > "$CONF_FILE" << 'CONF_EOF'
+# ============================================================================
+#  Voice Magic — Configuration
+# ============================================================================
+
+# The language to dictate in. 
+# Defaults to 'auto' to automatically detect the language (English, Hindi, etc.)
+# If you dictate predominantly in one language, set it to the language code 
+# to improve accuracy and speed: e.g. 'en', 'hi', 'es'
+LANGUAGE="auto"
+CONF_EOF
+    success "voice-magic.conf created"
+else
+    success "voice-magic.conf already exists — skipping"
+fi
+
+# ── Step 7: Create scripts ───────────────────────────────────────────────────
+step "Step 7/8: Creating runner scripts"
+
 DICTATE_SCRIPT="$SCRIPT_DIR/dictate.sh"
 cat > "$DICTATE_SCRIPT" << 'DICTATE_EOF'
 #!/bin/bash
@@ -164,6 +181,7 @@ cat > "$DICTATE_SCRIPT" << 'DICTATE_EOF'
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/voice-magic.conf"
 
 WHISPER_CLI="$SCRIPT_DIR/whisper.cpp/build/bin/whisper-cli"
 WHISPER_MODEL="$SCRIPT_DIR/whisper.cpp/models/ggml-large-v3-turbo.bin"
@@ -190,6 +208,7 @@ echo "🔄 Transcribing with Whisper..."
 "$WHISPER_CLI" \
     -m "$WHISPER_MODEL" \
     -f "$AUDIO_FILE" \
+    -l "$LANGUAGE" \
     --no-timestamps \
     -t 4 \
     2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
@@ -201,10 +220,10 @@ if [[ -z "$RAW_TEXT" ]]; then
     exit 0
 fi
 
-echo "📝 Raw transcription: $RAW_TEXT"
+echo "📝 Raw transcription ($LANGUAGE): $RAW_TEXT"
 echo "✨ Refining with Llama..."
 
-PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
+PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
@@ -228,20 +247,16 @@ if [[ -z "$REFINED_TEXT" ]]; then
 fi
 
 echo -n "$REFINED_TEXT" | pbcopy
-
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📋 Copied to clipboard:"
 echo "$REFINED_TEXT"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
 rm -f "$AUDIO_FILE" "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"
 DICTATE_EOF
-
 chmod +x "$DICTATE_SCRIPT"
 success "dictate.sh created"
 
-# --- process.sh (Hammerspoon mode: audio → transcribe → paste) ---
 PROCESS_SCRIPT="$SCRIPT_DIR/process.sh"
 cat > "$PROCESS_SCRIPT" << 'PROCESS_EOF'
 #!/bin/bash
@@ -251,6 +266,7 @@ cat > "$PROCESS_SCRIPT" << 'PROCESS_EOF'
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/voice-magic.conf"
 
 WHISPER_CLI="$SCRIPT_DIR/whisper.cpp/build/bin/whisper-cli"
 WHISPER_MODEL="$SCRIPT_DIR/whisper.cpp/models/ggml-large-v3-turbo.bin"
@@ -270,6 +286,7 @@ done
 "$WHISPER_CLI" \
     -m "$WHISPER_MODEL" \
     -f "$AUDIO_FILE" \
+    -l "$LANGUAGE" \
     --no-timestamps \
     -t 4 \
     2>/dev/null | sed '/^$/d' > "$RAW_TEXT_FILE"
@@ -281,7 +298,7 @@ if [[ -z "$RAW_TEXT" ]]; then
     exit 0
 fi
 
-PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
+PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
@@ -298,7 +315,6 @@ Corrected:"
     2>/dev/null | grep -v '^>' | sed '/^$/d' | head -5 > "$REFINED_TEXT_FILE"
 
 REFINED_TEXT="$(cat "$REFINED_TEXT_FILE")"
-
 if [[ -z "$REFINED_TEXT" ]]; then
     REFINED_TEXT="$RAW_TEXT"
 fi
@@ -309,14 +325,12 @@ osascript -e "display notification \"$(echo "$REFINED_TEXT" | head -1)\" with ti
 
 rm -f "$AUDIO_FILE" "$RAW_TEXT_FILE" "$REFINED_TEXT_FILE"
 PROCESS_EOF
-
 chmod +x "$PROCESS_SCRIPT"
 success "process.sh created"
 
-# ── Step 7: Hammerspoon (Hold-to-Record) ─────────────────────────────────────
-step "Step 7/7: Setting up Hammerspoon (hold-to-record hotkey)"
+# ── Step 8: Hammerspoon (Hold-to-Record) ─────────────────────────────────────
+step "Step 8/8: Setting up Hammerspoon (hold-to-record hotkey)"
 
-# Install Hammerspoon
 if ! brew list --cask hammerspoon &>/dev/null; then
     info "Installing Hammerspoon..."
     brew install --cask hammerspoon
@@ -325,18 +339,13 @@ else
     success "Hammerspoon already installed"
 fi
 
-# Determine sox path for Hammerspoon
 SOX_PATH="$(which sox)"
-
-# Create Hammerspoon config
 HAMMERSPOON_DIR="$HOME/.hammerspoon"
 mkdir -p "$HAMMERSPOON_DIR"
 
 VOICE_MAGIC_LUA="$SCRIPT_DIR/voice-magic.lua"
 cat > "$VOICE_MAGIC_LUA" << LUAEOF
 -- Voice Magic — Hammerspoon Config
--- Hold ⌥D (Option+D) to record, release to transcribe + paste
-
 local VOICE_MAGIC_DIR = "$SCRIPT_DIR"
 local AUDIO_FILE = "/tmp/voice_magic_recording.wav"
 local PROCESS_SCRIPT = VOICE_MAGIC_DIR .. "/process.sh"
@@ -389,10 +398,8 @@ end
 
 hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", 3)
 LUAEOF
-
 success "voice-magic.lua created"
 
-# Add to Hammerspoon init.lua
 INIT_LUA="$HAMMERSPOON_DIR/init.lua"
 REQUIRE_LINE="dofile(\"$SCRIPT_DIR/voice-magic.lua\")"
 

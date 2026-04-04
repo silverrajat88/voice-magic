@@ -56,7 +56,7 @@ if [[ -d "$SCRIPT_DIR/llama.cpp" ]]; then
     success "Removed llama.cpp/"
 fi
 
-for file in dictate.sh process.sh voice-magic.lua; do
+for file in dictate.sh process.sh voice-magic.lua voice-magic.conf; do
     if [[ -f "$SCRIPT_DIR/$file" ]]; then
         rm -f "$SCRIPT_DIR/$file"
         success "Removed $file"
