@@ -15,6 +15,8 @@ class ParakeetHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length).decode('utf-8').strip()
         
+        print(f"[DEBUG] Received Audio Stream: {post_data}", flush=True)
+        
         try:
             if not os.path.exists(post_data):
                 raise Exception(f"File not found: {post_data}")
@@ -25,14 +27,13 @@ class ParakeetHandler(BaseHTTPRequestHandler):
             self.end_headers()
             
             # Send raw text back
+            print(f"[DEBUG] Transcription payload dispatched: {res.text[:50]}...", flush=True)
             self.wfile.write(res.text.encode('utf-8'))
         except Exception as e:
+            print(f"[ERROR] Inference failed: {str(e)}", flush=True)
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode('utf-8'))
-
-    def log_message(self, format, *args):
-        pass # Suppress standard HTTP stdout logging for speed
 
 if __name__ == '__main__':
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8082
