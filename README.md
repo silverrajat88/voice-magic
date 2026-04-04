@@ -78,6 +78,11 @@ Before or after installing, open `voice-magic.conf` to perfectly tailor Voice Ma
 ### 3. Hyper-Speed Modes
 - `SKIP_LLM_PROCESSING="true"`: Turn off the LLM ("The Brain") altogether. Voice Magic will drop raw transcribed text into your clipboard in under a second!
 
+### 4. Persistent Memory Servers
+Voice Magic supports ultra-low latency model processing by invisibly keeping the models loaded directly in your macOS unified memory.
+- `AUTO_START_SERVERS="true"`: Dictates whether these servers turn on automatically when Hammerspoon boots. Set to `false` to manually boot them via the macOS Menu bar dropdown.
+- `LLM_PORT`, `WHISPER_PORT`, `PARAKEET_PORT`: Expose standard HTTP ports locally on `127.0.0.1` allowing deep configuration avoiding conflicts with other software.
+
 ---
 
 ## Usage
