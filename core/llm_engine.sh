@@ -45,6 +45,8 @@ PROMPT="$(get_prompt "$MODE" "$RAW_TEXT" "${TRANSLATE_TO_ENGLISH:-false}")"
     -r "User:" \
     -r "Text:" \
     -r "###" \
+    -r "<jupyter_text>" \
+    -r " [end of text]" \
     < /dev/null \
     2>/dev/null | grep -v '^>' | sed '/^$/d' | grep -v '```' | \
     sed -e '/^Text:$/d' -e '/^User:$/d' -e '/^Code Output:$/d' -e '/^Corrected:$/d' -e '/^Code:$/d' -e '/^Output:$/d' -e '/^Corrected English:$/d' \
