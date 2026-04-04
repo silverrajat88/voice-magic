@@ -17,7 +17,7 @@ echo "🎙️  Listening... (speak now, stops after 1.5s of silence)"
 sox -d -r 16000 -c 1 -b 16 "$AUDIO_FILE" silence 1 0.1 1% 1 1.5 1%
 afplay /System/Library/Sounds/Pop.aiff &
 
-echo "🔄 Transcribing with Whisper..."
+echo "🔄 Transcribing with ${STT_ENGINE:-whisper}..."
 "$SCRIPT_DIR/core/stt_engine.sh" "$AUDIO_FILE" "$RAW_TEXT_FILE"
 
 if [[ ! -f "$RAW_TEXT_FILE" || ! -s "$RAW_TEXT_FILE" ]]; then
