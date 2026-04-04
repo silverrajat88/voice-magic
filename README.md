@@ -128,6 +128,16 @@ voice-magic/
 
 ## Troubleshooting
 
+### Checking Server Status
+If you are utilizing the Persistent Memory Servers (via Hammerspoon) and want to verify if they are running in the background, run this command in your terminal:
+```bash
+# Show active memory servers bound to their respective ports
+lsof -iTCP -sTCP:LISTEN -P | grep -E '8080|8081|8082'
+
+# Or view their live event logs
+tail -n 15 /tmp/*_server.log
+```
+
 - **"No speech detected"**: Ensure Terminal or Hammerspoon has Microphone permission in Privacy & Security settings.
 - **Dictation slowness**: Apple Silicon Macs will process text gracefully under 2-3 seconds. Non-Apple Silicon Intel Macs will see delays ranging from 10-20 seconds. If necessary, toggle `SKIP_LLM_PROCESSING="true"` in the config.
 - **Missing Models**: Restart `./install.sh`. Interrupted downloads will pick up where they broke off.
