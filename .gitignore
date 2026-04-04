@@ -1,7 +1,3 @@
 whisper.cpp/
 llama.cpp/
-dictate.sh
-process.sh
-voice-magic.lua
 .DS_Store
-voice-magic.conf
