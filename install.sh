@@ -184,6 +184,9 @@ cat > "$DICTATE_SCRIPT" << 'DICTATE_EOF'
 #  Records your voice → transcribes with Whisper → refines with Llama → clipboard
 # ============================================================================
 
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/voice-magic.conf"
 
@@ -234,11 +237,11 @@ echo "📝 Raw transcription ($LANGUAGE): $RAW_TEXT"
 echo "✨ Refining with Llama..."
 
 if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
-    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
+    PROMPT="Translate the following dictated text into English, fix its grammar and punctuation, and remove filler words. Output ONLY the corrected English text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
-Corrected:"
+Corrected English:"
 else
     PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
@@ -283,6 +286,9 @@ cat > "$PROCESS_SCRIPT" << 'PROCESS_EOF'
 #  Takes a recorded audio file → transcribes → refines → clipboard → paste
 # ============================================================================
 
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/voice-magic.conf"
 
@@ -323,11 +329,11 @@ if [[ -z "$RAW_TEXT" ]]; then
 fi
 
 if [[ "${TRANSLATE_TO_ENGLISH:-false}" == "true" ]]; then
-    PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Output ONLY the corrected text, nothing else. Do not add any explanation.
+    PROMPT="Translate the following dictated text into English, fix its grammar and punctuation, and remove filler words. Output ONLY the corrected English text, nothing else. Do not add any explanation.
 
 Text: $RAW_TEXT
 
-Corrected:"
+Corrected English:"
 else
     PROMPT="Fix the grammar, punctuation, and remove filler words from the following dictated text. Maintain the original language of the text. Do not translate it. Output ONLY the corrected text, nothing else. Do not add any explanation.
 
