@@ -60,6 +60,12 @@ chmod +x install.sh
 
 Takes **10-20 minutes** (mostly downloading models depending on internet). _Tip: The installer is idempotent and skips completed tasks!_
 
+### Creating a Release (.dmg)
+Voice Magic includes an automated DMG compiler so you can package changes beautifully without needing any Apple Developer licenses.
+1. Make your code changes.
+2. Run `./build_dmg.sh` in your terminal. 
+3. A lightweight installation payload `VoiceMagic.dmg` will dynamically generate inside a new `dist/` folder, completely stripped of heavy caches and strictly containing your updated core files, ready to be uploaded to GitHub Releases!
+
 ---
 
 ## Configuration (`voice-magic.conf`)
