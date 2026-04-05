@@ -42,8 +42,14 @@ EOF
 osacompile -o "$TEMP_DIR/Voice Magic/Install Voice Magic.app" "$APP_SCRIPT"
 rm "$APP_SCRIPT"
 
-echo ">> Compiling .dmg image natively via hdiutil..."
-hdiutil create -volname "$APP_NAME Installation" -srcfolder "$TEMP_DIR/Voice Magic" -ov -format UDZO "dist/$DMG_NAME"
+# Ensure the app bundle is marked as executable
+chmod -R +x "$TEMP_DIR/Voice Magic/Install Voice Magic.app"
+
+echo ">> Cleaning metadata cruft..."
+dot_clean -m "$TEMP_DIR/Voice Magic"
+
+echo ">> Compiling .dmg image natively via hdiutil (HFS+)..."
+hdiutil create -volname "$APP_NAME Installation" -srcfolder "$TEMP_DIR/Voice Magic" -ov -format UDZO -fs HFS+ "dist/$DMG_NAME"
 
 rm -rf "$TEMP_DIR"
 
