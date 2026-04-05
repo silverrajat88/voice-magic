@@ -54,6 +54,10 @@ if curl -sSf "127.0.0.1:${LLM_PORT:-8080}/health" >/dev/null 2>&1; then
     fi
 fi
 
+if [[ ! -f "$LLAMA_MODEL_PATH" ]]; then
+    mkdir -p "$SCRIPT_DIR/llama.cpp/models"
+    wget -q --show-progress -O "$LLAMA_MODEL_PATH" "$LLAMA_MODEL_URL" || true
+fi
 
 "$LLAMA_CLI" \
     -m "$LLAMA_MODEL_PATH" \

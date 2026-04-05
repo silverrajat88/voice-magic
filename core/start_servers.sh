@@ -8,6 +8,12 @@ source "$SCRIPT_DIR/voice-magic.conf"
 
 "$SCRIPT_DIR/core/stop_servers.sh"
 
+# Ensure ports are actually closed before proceeding (prevents "Address already in use")
+echo "Waiting for ports to clear..."
+while lsof -i :${LLM_PORT:-8080} -i :${WHISPER_PORT:-8081} -i :${PARAKEET_PORT:-8082} &>/dev/null; do
+    sleep 0.2
+done
+
 echo "Booting Voice Magic Servers..."
 
 STT_ENGINE="${STT_ENGINE:-whisper}"
@@ -28,7 +34,13 @@ if [[ "${SKIP_LLM_PROCESSING:-false}" != "true" ]]; then
     LLAMA_SRV="$SCRIPT_DIR/llama.cpp/build/bin/llama-server"
     LLAMA_MODEL_PATH="$SCRIPT_DIR/llama.cpp/models/$LLAMA_MODEL_FILE"
     
-    nohup "$LLAMA_SRV" -m "$LLAMA_MODEL_PATH" -c 1024 --host 127.0.0.1 --port "${LLM_PORT:-8080}" > /tmp/llama_server.log 2>&1 &
+    if [[ ! -f "$LLAMA_MODEL_PATH" ]]; then
+        echo "Model not found natively. Fetching $LLAMA_MODEL_FILE from HuggingFace..." > /tmp/llama_server.log
+        mkdir -p "$SCRIPT_DIR/llama.cpp/models"
+        wget -q --show-progress -O "$LLAMA_MODEL_PATH" "$LLAMA_MODEL_URL" >> /tmp/llama_server.log 2>&1 || true
+    fi
+    
+    nohup "$LLAMA_SRV" -m "$LLAMA_MODEL_PATH" -c 1024 --host 127.0.0.1 --port "${LLM_PORT:-8080}" >> /tmp/llama_server.log 2>&1 &
     echo $! > /tmp/llama_server.pid
 fi
 
