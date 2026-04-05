@@ -11,7 +11,14 @@ end
 
 local AUDIO_FILE = "/tmp/voice_magic_recording.wav"
 local PROCESS_SCRIPT = VOICE_MAGIC_DIR .. "/process.sh"
-local SOX_PATH = "/opt/homebrew/bin/sox"
+local function getSoxPath()
+    local f1 = io.open("/opt/homebrew/bin/sox", "r")
+    if f1 then f1:close(); return "/opt/homebrew/bin/sox" end
+    local f2 = io.open("/usr/local/bin/sox", "r")
+    if f2 then f2:close(); return "/usr/local/bin/sox" end
+    return "sox"
+end
+local SOX_PATH = getSoxPath()
 
 local elegantStyle = {
     strokeColor = {white = 1, alpha = 0.1},
