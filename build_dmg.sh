@@ -31,24 +31,19 @@ set appPath to POSIX path of (path to me)
 if appPath ends with "/" then
     set appPath to text 1 thru -2 of appPath
 end if
-set appDir to do shell script "dirname " & quoted form of appPath
+set currentDir to do shell script "dirname " & quoted form of appPath
+set targetFolder to POSIX path of (path to documents folder) & "VoiceMagic"
 tell application "Terminal"
     activate
-    do script "cd " & quoted form of appDir & " && chmod +x install.sh && ./install.sh"
+    do script "echo '🚀 Bootstrapping Voice Magic into Documents folder...' && mkdir -p " & quoted form of targetFolder & " && ditto " & quoted form of currentDir & " " & quoted form of targetFolder & " && cd " & quoted form of targetFolder & " && chmod +x install.sh && ./install.sh"
 end tell
 EOF
 
 osacompile -o "$TEMP_DIR/Voice Magic/Install Voice Magic.app" "$APP_SCRIPT"
 rm "$APP_SCRIPT"
 
-echo ">> Compiling .dmg image natively..."
-create-dmg \
-  --volname "$APP_NAME Install Payload" \
-  --window-pos 200 120 \
-  --window-size 500 300 \
-  --icon-size 100 \
-  "dist/$DMG_NAME" \
-  "$TEMP_DIR/Voice Magic"
+echo ">> Compiling .dmg image natively via hdiutil..."
+hdiutil create -volname "$APP_NAME Installation" -srcfolder "$TEMP_DIR/Voice Magic" -ov -format UDZO "dist/$DMG_NAME"
 
 rm -rf "$TEMP_DIR"
 
