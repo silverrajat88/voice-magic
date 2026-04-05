@@ -24,6 +24,23 @@ TEMP_DIR=$(mktemp -d)
 cp -R . "$TEMP_DIR/Voice Magic"
 rm -rf "$TEMP_DIR/Voice Magic/.git" "$TEMP_DIR/Voice Magic/venv" "$TEMP_DIR/Voice Magic/whisper.cpp/models" "$TEMP_DIR/Voice Magic/llama.cpp/models" "$TEMP_DIR/Voice Magic/whisper.cpp/build" "$TEMP_DIR/Voice Magic/llama.cpp/build" 2>/dev/null || true
 
+echo ">> Generating Native macOS App Installer Wrapper..."
+APP_SCRIPT="$TEMP_DIR/Voice Magic/Install Voice Magic.scpt"
+cat << 'EOF' > "$APP_SCRIPT"
+set appPath to POSIX path of (path to me)
+if appPath ends with "/" then
+    set appPath to text 1 thru -2 of appPath
+end if
+set appDir to do shell script "dirname " & quoted form of appPath
+tell application "Terminal"
+    activate
+    do script "cd " & quoted form of appDir & " && chmod +x install.sh && ./install.sh"
+end tell
+EOF
+
+osacompile -o "$TEMP_DIR/Voice Magic/Install Voice Magic.app" "$APP_SCRIPT"
+rm "$APP_SCRIPT"
+
 echo ">> Compiling .dmg image natively..."
 create-dmg \
   --volname "$APP_NAME Install Payload" \
