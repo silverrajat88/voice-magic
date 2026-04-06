@@ -60,6 +60,19 @@ chmod +x install.sh
 
 Takes **10-20 minutes** (mostly downloading models depending on internet). _Tip: The installer is idempotent and skips completed tasks!_
 
+### 🚨 Critical: Post-Install Permissions
+
+macOS security prevents scripts from granting these permissions automatically. You **must** enable them manually for Voice Magic to function:
+
+1.  **Accessibility:** Required for the "Auto-Paste" feature to work globally.
+    - Go to **System Settings** → **Privacy & Security** → **Accessibility**.
+    - Toggle **Hammerspoon** to **ON**.
+    - *Tip: If it was already ON but pasting fails, toggle it OFF and then ON again to "refresh" the permission.*
+
+2.  **Microphone:** Required to record your voice.
+    - Go to **System Settings** → **Privacy & Security** → **Microphone**.
+    - Ensure **Hammerspoon** (and Terminal, if using CLI mode) is toggled **ON**.
+
 ---
 
 ## Configuration (`voice-magic.conf`)
