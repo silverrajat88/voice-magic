@@ -192,4 +192,4 @@ if autoStartServers then
     hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
 end
 
-hs.alert.show("🎙️ Voice Magic loaded — Hold Right Option to dictate", elegantStyle, hs.screen.mainScreen(), 3)
+hs.alert.show("🎙️ Voice Magic loaded — Hold Right Option (⌥) to dictate", elegantStyle, hs.screen.mainScreen(), 3)
