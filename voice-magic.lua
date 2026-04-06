@@ -89,48 +89,64 @@ local recording = false
 local soxTask = nil
 local processingAlert = nil
 
-hs.hotkey.bind({"alt"}, "d",
-    function()
-        if recording then return end
-        recording = true
-        hs.sound.getByFile("/System/Library/Sounds/Tink.aiff"):play()
-        processingAlert = hs.alert.show("🎙️ Recording...", elegantStyle, hs.screen.mainScreen(), "forever")
-        soxTask = hs.task.new(SOX_PATH, nil, {
-            "-d", "-r", "16000", "-c", "1", "-b", "16", AUDIO_FILE
-        })
-        soxTask:start()
-    end,
-    function()
-        if not recording then return end
-        recording = false
-        if processingAlert then hs.alert.closeSpecific(processingAlert) end
-        if soxTask and soxTask:isRunning() then
-            local maxWait = 10
-            while soxTask:isRunning() and maxWait > 0 do
-                hs.timer.usleep(100000)
-                maxWait = maxWait - 1
-            end
-            if soxTask:isRunning() then
-                soxTask:terminate()
-                hs.timer.usleep(500000)
-            end
-        end
-        hs.sound.getByFile("/System/Library/Sounds/Pop.aiff"):play()
+local function startRecording()
+    if recording then return end
+    recording = true
+    hs.sound.getByFile("/System/Library/Sounds/Tink.aiff"):play()
+    processingAlert = hs.alert.show("🎙️ Recording...", elegantStyle, hs.screen.mainScreen(), "forever")
+    soxTask = hs.task.new(SOX_PATH, nil, {
+        "-d", "-r", "16000", "-c", "1", "-b", "16", AUDIO_FILE
+    })
+    soxTask:start()
+end
 
-        local alertText
-        if skipLLM then
-            alertText = "⚡ Transcribing (" .. sttEngine .. ")..."
-        else
-            alertText = "✨ Processing (" .. sttEngine .. " → " .. activeModel .. ")..."
+local function stopRecording()
+    if not recording then return end
+    recording = false
+    if processingAlert then hs.alert.closeSpecific(processingAlert) end
+    if soxTask and soxTask:isRunning() then
+        local maxWait = 10
+        while soxTask:isRunning() and maxWait > 0 do
+            hs.timer.usleep(100000)
+            maxWait = maxWait - 1
         end
-        processingAlert = hs.alert.show(alertText, elegantStyle, hs.screen.mainScreen(), 30)
-        
-        hs.task.new("/bin/bash", function(exitCode)
-            if processingAlert then hs.alert.closeSpecific(processingAlert) end
-            if exitCode ~= 0 then hs.alert.show("⚠️ Voice Magic failed", elegantStyle, hs.screen.mainScreen(), 3) end
-        end, {PROCESS_SCRIPT, AUDIO_FILE}):start()
+        if soxTask:isRunning() then
+            soxTask:terminate()
+            hs.timer.usleep(500000)
+        end
     end
-)
+    hs.sound.getByFile("/System/Library/Sounds/Pop.aiff"):play()
+
+    local alertText
+    if skipLLM then
+        alertText = "⚡ Transcribing (" .. sttEngine .. ")..."
+    else
+        alertText = "✨ Processing (" .. sttEngine .. " → " .. activeModel .. ")..."
+    end
+    processingAlert = hs.alert.show(alertText, elegantStyle, hs.screen.mainScreen(), 30)
+    
+    hs.task.new("/bin/bash", function(exitCode)
+        if processingAlert then hs.alert.closeSpecific(processingAlert) end
+        if exitCode ~= 0 then hs.alert.show("⚠️ Voice Magic failed", elegantStyle, hs.screen.mainScreen(), 3) end
+    end, {PROCESS_SCRIPT, AUDIO_FILE}):start()
+end
+
+-- Right-Option (KeyCode 61) "Hold-to-Talk" Trigger
+local modifierTap = hs.eventtap.new({hs.eventtap.event.types.flagsChanged}, function(event)
+    local keyCode = event:getKeyCode()
+    local flags = event:getFlags()
+    
+    -- 61 is Right Option on most Mac keyboards
+    if keyCode == 61 then
+        if flags.alt then
+            startRecording()
+        else
+            stopRecording()
+        end
+    end
+    return false -- allow event to pass through
+end)
+modifierTap:start()
 
 local menubar = hs.menubar.new()
 if menubar then
@@ -176,4 +192,4 @@ if autoStartServers then
     hs.task.new("/bin/bash", nil, {VOICE_MAGIC_DIR .. "/core/start_servers.sh"}):start()
 end
 
-hs.alert.show("🎙️ Voice Magic loaded — Hold ⌥D to dictate", elegantStyle, hs.screen.mainScreen(), 3)
+hs.alert.show("🎙️ Voice Magic loaded — Hold Right Option to dictate", elegantStyle, hs.screen.mainScreen(), 3)
